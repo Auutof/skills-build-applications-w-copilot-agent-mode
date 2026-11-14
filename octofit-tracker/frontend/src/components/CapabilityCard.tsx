@@ -4,23 +4,21 @@ import { getJson } from '../api/client.js';
 type Props<T> = {
   title: string;
   description: string;
-  endpoint: string;
-  resourceKey: string;
+  loadItems: () => Promise<T[]>;
   emptyMessage: string;
   renderItem: (item: T) => ReactNode;
 };
 
-export function CapabilityCard<T,>({ title, description, endpoint, resourceKey, emptyMessage, renderItem }: Props<T>) {
+export function CapabilityCard<T,>({ title, description, loadItems, emptyMessage, renderItem }: Props<T>) {
   const [items, setItems] = useState<T[]>();
   const [error, setError] = useState<string>();
 
   useEffect(() => {
     let active = true;
-    void getJson<Record<string, T[]>>(endpoint)
-      .then((payload) => {
-        const resource = payload?.[resourceKey];
-        if (!Array.isArray(resource)) throw new Error(`Invalid response for ${resourceKey}`);
-        if (active) setItems(resource);
+    void loadItems()
+      .then((results) => {
+        if (!Array.isArray(results)) throw new Error(`Invalid response for ${title.toLowerCase()}`);
+        if (active) setItems(results);
       })
       .catch((reason: unknown) => {
         if (active) setError(reason instanceof Error ? reason.message : 'An unexpected error occurred');
@@ -29,7 +27,7 @@ export function CapabilityCard<T,>({ title, description, endpoint, resourceKey, 
     return () => {
       active = false;
     };
-  }, [endpoint, resourceKey]);
+  }, [loadItems, title]);
 
   return (
     <section className="card h-100">
